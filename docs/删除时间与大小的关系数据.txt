@@ -1,0 +1,46 @@
+16209-27349/com.jiepier.filemanager D/Aspectj: 调用信息：函数为：boolean com.jiepier.filemanager.sqlite.DataManager.deleteSQL(String, String)参数为：[doc, //storage/sdcard/Download/1.txt]
+16209-27349/com.jiepier.filemanager D/Aspectj: 开始时间：20秒39毫秒
+16209-27349/com.jiepier.filemanager D/Aspectj: 结束时间：20秒39毫秒
+16209-27351/com.jiepier.filemanager D/Aspectj: 调用信息：函数为：boolean com.jiepier.filemanager.sqlite.DataManager.deleteSQL(String, String)参数为：[doc, //storage/sdcard/Download/2.txt]
+16209-27351/com.jiepier.filemanager D/Aspectj: 开始时间：29秒883毫秒
+16209-27351/com.jiepier.filemanager D/Aspectj: 结束时间：29秒884毫秒
+16209-27350/com.jiepier.filemanager D/Aspectj: 调用信息：函数为：boolean com.jiepier.filemanager.sqlite.DataManager.deleteSQL(String, String)参数为：[doc, //storage/sdcard/Download/3.txt]
+16209-27350/com.jiepier.filemanager D/Aspectj: 开始时间：39秒266毫秒
+16209-27350/com.jiepier.filemanager D/Aspectj: 结束时间：39秒267毫秒
+16209-27348/com.jiepier.filemanager D/Aspectj: 调用信息：函数为：boolean com.jiepier.filemanager.sqlite.DataManager.deleteSQL(String, String)参数为：[doc, //storage/sdcard/Download/4.pdf]
+16209-27348/com.jiepier.filemanager D/Aspectj: 开始时间：47秒172毫秒
+16209-27348/com.jiepier.filemanager D/Aspectj: 结束时间：47秒173毫秒
+16209-27349/com.jiepier.filemanager D/Aspectj: 调用信息：函数为：boolean com.jiepier.filemanager.sqlite.DataManager.deleteSQL(String, String)参数为：[doc, //storage/sdcard/Download/5.pdf]
+16209-27349/com.jiepier.filemanager D/Aspectj: 开始时间：54秒637毫秒
+16209-27349/com.jiepier.filemanager D/Aspectj: 结束时间：54秒638毫秒
+16209-27351/com.jiepier.filemanager D/Aspectj: 调用信息：函数为：boolean com.jiepier.filemanager.sqlite.DataManager.deleteSQL(String, String)参数为：[zip, //storage/sdcard/Download/7.zip]
+16209-27351/com.jiepier.filemanager D/Aspectj: 开始时间：1秒676毫秒
+16209-27351/com.jiepier.filemanager D/Aspectj: 结束时间：1秒679毫秒
+
+
+16209-6548/com.jiepier.filemanager D/Aspectj: 调用信息：函数为：boolean com.jiepier.filemanager.sqlite.DataManager.deleteSQL(String, String)参数为：[doc, //storage/sdcard/Download/1.txt]
+16209-6548/com.jiepier.filemanager D/Aspectj: 开始时间：40秒156毫秒
+16209-6548/com.jiepier.filemanager D/Aspectj: 结束时间：40秒158毫秒
+16209-6546/com.jiepier.filemanager D/Aspectj: 调用信息：函数为：boolean com.jiepier.filemanager.sqlite.DataManager.deleteSQL(String, String)参数为：[doc, //storage/sdcard/Download/2.txt]
+16209-6546/com.jiepier.filemanager D/Aspectj: 开始时间：53秒217毫秒
+16209-6546/com.jiepier.filemanager D/Aspectj: 结束时间：53秒219毫秒
+16209-6547/com.jiepier.filemanager D/Aspectj: 调用信息：函数为：boolean com.jiepier.filemanager.sqlite.DataManager.deleteSQL(String, String)参数为：[doc, //storage/sdcard/Download/3.txt]
+16209-6547/com.jiepier.filemanager D/Aspectj: 开始时间：5秒532毫秒
+16209-6547/com.jiepier.filemanager D/Aspectj: 结束时间：5秒533毫秒
+16209-6590/com.jiepier.filemanager D/Aspectj: 调用信息：函数为：boolean com.jiepier.filemanager.sqlite.DataManager.deleteSQL(String, String)参数为：[doc, //storage/sdcard/Download/4.pdf]
+16209-6590/com.jiepier.filemanager D/Aspectj: 开始时间：18秒3毫秒
+16209-6590/com.jiepier.filemanager D/Aspectj: 结束时间：18秒4毫秒
+16209-6548/com.jiepier.filemanager D/Aspectj: 调用信息：函数为：boolean com.jiepier.filemanager.sqlite.DataManager.deleteSQL(String, String)参数为：[doc, //storage/sdcard/Download/5.pdf]
+16209-6548/com.jiepier.filemanager D/Aspectj: 开始时间：33秒194毫秒
+16209-6548/com.jiepier.filemanager D/Aspectj: 结束时间：33秒197毫秒
+16209-6546/com.jiepier.filemanager D/Aspectj: 调用信息：函数为：boolean com.jiepier.filemanager.sqlite.DataManager.deleteSQL(String, String)参数为：[zip, //storage/sdcard/Download/7.zip]
+16209-6546/com.jiepier.filemanager D/Aspectj: 开始时间：46秒267毫秒
+16209-6546/com.jiepier.filemanager D/Aspectj: 结束时间：46秒268毫秒
+
+
+1  0k
+2  7k
+3  1739k
+4  4825k
+5  16870k
+6  56424k
