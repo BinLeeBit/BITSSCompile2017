@@ -26,6 +26,10 @@
 #define _GNU_SOURCE
 #define _FILE_OFFSET_BITS 64
 
+#define SELECT_INPUT      //@BBL 测试用例选择算法改进
+#define MUTATE_NUM        //@BBL 变异数量确定算法改进
+#define TARGET_MUTATE     //@BBL 针对性变异算法
+
 #include "config.h"
 #include "types.h"
 #include "debug.h"
@@ -1255,9 +1259,9 @@ static void update_bitmap_score(struct queue_entry* q) {
   u64 fav_factor = q->exec_us * q->len;
   /*@BBL 通过bitmap_size(覆盖次数)比较*/
   u64 fuzz_p2         = next_p2(q->n_fuzz);
-  //u32 fav_bitmap_size     = q->bitmap_size;
-  //u32 fav_num_eff_mutate  = q->num_eff_mutate;
-  //u32 fav_num_mutate      = q->num_mutate;
+  u32 fav_bitmap_size     = q->bitmap_size;
+  u32 fav_num_eff_mutate  = q->num_eff_mutate;
+  u32 fav_num_mutate      = q->num_mutate;
   //end
 
   /* For every byte set in trace_bits[], see if there is a previous winner,
@@ -1271,24 +1275,25 @@ static void update_bitmap_score(struct queue_entry* q) {
 
          /*@BBL */
           u64 top_rated_fuzz_p2    = next_p2 (top_rated[i]->n_fuzz);
-          //u32 top_fav_bitmap_size  = top_rated[i]->bitmap_size;
           u64 top_rated_fav_factor = top_rated[i]->exec_us * top_rated[i]->len;
+          if(fuzz_p2>top_rated_fuzz_p2) continue;
+
+          if(fuzz_p2==top_rated_fuzz_p2){
+
+            if( fav_factor > top_rated_fav_factor) continue;
+          }
+#ifdef SELECT_INPUT
+          u32 top_fav_bitmap_size  = top_rated[i]->bitmap_size;
 
          /* Faster-executing or smaller test cases are favored. */
 
-         /* if(fav_num_eff_mutate*top_rated[i]->num_mutate 
+         if(fav_num_eff_mutate*top_rated[i]->num_mutate 
             < top_rated[i]->num_eff_mutate * fav_num_mutate)//此处将比值比较改为乘法比较
             continue;
-          */
-          /*if (fav_bitmap_size > top_fav_bitmap_size) continue;
-          else if(fav_bitmap_size == top_fav_bitmap_size){
-
-            if (fav_factor > top_rated_fav_factor) continue;
-         }*/
-         if(fuzz_p2>top_rated_fuzz_p2) continue;
-         else if(fuzz_p2==top_rated_fuzz_p2){
-            if( fav_factor > top_rated_fav_factor) continue;
-         }
+          
+         if (fav_bitmap_size > top_fav_bitmap_size) continue;
+         
+#endif
          //end 
 
          /* Looks like we're going to win. Decrease ref count for the
@@ -4766,6 +4771,7 @@ static u32 calculate_score(struct queue_entry* q) {
   else if (q->bitmap_size * 1.5 < avg_bitmap_size) perf_score *= 0.75;
 
   /*@BBL 通过n_fuzz进一步准确化perf_score*/
+#ifdef MUTATE_NUM
   u32 cmp_nfuzz = 0;
   if(avg_nfuzz != 0){
     cmp_nfuzz = q->n_fuzz / avg_nfuzz;
@@ -4800,6 +4806,7 @@ static u32 calculate_score(struct queue_entry* q) {
     }
   }
   //end
+#endif
 
   /* Adjust score based on handicap. Handicap is proportional to how late
      in the game we learned about this path. Latecomers are allowed to run
@@ -4832,7 +4839,9 @@ static u32 calculate_score(struct queue_entry* q) {
   }
 
   /*@BBL 计算per_score(即根据有效字节的占比打分),除以2防止数据溢出*/
+#ifdef MUTATE_NUM
   perf_score *= q->eff_score / 2;
+#endif
   //end
 
   /* Make sure that we don't go over limit. */
@@ -5433,6 +5442,7 @@ static u8 fuzz_one(char** argv) {
   }
 
   /*@BBL 计算有效字节比，并给予打分*/
+#ifdef MUTATE_NUM
   if(len > 0){
     if(eff_cnt * 10 / len > 1)
       queue_cur->eff_score = 4;
@@ -5446,6 +5456,7 @@ static u8 fuzz_one(char** argv) {
   else{
     queue_cur->eff_score = 0;
   }
+#endif
   //end
 
   /* If the effector map is more than EFF_MAX_PERC dense, just flag the
@@ -8266,3 +8277,4 @@ stop_fuzzing:
 }
 
 #endif /* !AFL_LIB */
+
