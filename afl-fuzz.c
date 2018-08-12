@@ -28,7 +28,7 @@
 
 #define SELECT_INPUT      //@BBL 测试用例选择算法改进
 #define MUTATE_NUM        //@BBL 变异数量确定算法改进
-#define TARGET_MUTATE     //@BBL 针对性变异算法
+//#define TARGET_MUTATE     //@BBL 针对性变异算法
 
 #include "config.h"
 #include "types.h"
@@ -6235,7 +6235,11 @@ havoc_stage:
     for (i = 0; i < use_stacking; i++) {
 
       //@BBL 15改成17
-      switch (UR(17 + ((extras_cnt + a_extras_cnt) ? 2 : 0))) {
+      u32 rag = 15;
+#ifdef  TARGET_MUTATE
+      rag = 17;
+#endif
+      switch (UR(rag + ((extras_cnt + a_extras_cnt) ? 2 : 0))) {
 
         case 0:
 
@@ -6406,8 +6410,9 @@ havoc_stage:
             /* Just set a random byte to a random value. Because,
               why not. We use XOR with 1-255 to eliminate the
               possibility of a no-op. */
-
-            //out_buf[UR(temp_len)] ^= 1 + UR(255);
+#ifndef TARGET_MUTATE
+            out_buf[UR(temp_len)] ^= 1 + UR(255);
+#else
             /*@BBL @根据eff_map设置随即值，eff_map[i] = 1,设置随即值，eff_map[i] = 0
                 给一个随机值，如果>25%,则设置随即值;  此处产生段错误*/
             u32 pos = UR(temp_len>len?len:temp_len);
@@ -6417,6 +6422,7 @@ havoc_stage:
               out_buf[pos] ^= 1 + UR(255);
               
             }
+#endif
             break;
           }
 
@@ -6520,7 +6526,96 @@ havoc_stage:
             break;
 
           }
-        
+#ifndef TARGET_MUTATE
+        case 15: {
+
+            /* Overwrite bytes with an extra. */
+
+            if (!extras_cnt || (a_extras_cnt && UR(2))) {
+
+              /* No user-specified extras or odds in our favor. Let's use an
+                 auto-detected one. */
+
+              u32 use_extra = UR(a_extras_cnt);
+              u32 extra_len = a_extras[use_extra].len;
+              u32 insert_at;
+
+              if (extra_len > temp_len) break;
+
+              insert_at = UR(temp_len - extra_len + 1);
+              memcpy(out_buf + insert_at, a_extras[use_extra].data, extra_len);
+
+            } else {
+
+              /* No auto extras or odds in our favor. Use the dictionary. */
+
+              u32 use_extra = UR(extras_cnt);
+              u32 extra_len = extras[use_extra].len;
+              u32 insert_at;
+
+              if (extra_len > temp_len) break;
+
+              insert_at = UR(temp_len - extra_len + 1);
+              memcpy(out_buf + insert_at, extras[use_extra].data, extra_len);
+
+            }
+
+            break;
+
+          }
+
+        case 16: {
+
+            u32 use_extra, extra_len, insert_at = UR(temp_len + 1);
+            u8* new_buf;
+
+            /* Insert an extra. Do the same dice-rolling stuff as for the
+               previous case. */
+
+            if (!extras_cnt || (a_extras_cnt && UR(2))) {
+
+              use_extra = UR(a_extras_cnt);
+              extra_len = a_extras[use_extra].len;
+
+              if (temp_len + extra_len >= MAX_FILE) break;
+
+              new_buf = ck_alloc_nozero(temp_len + extra_len);
+
+              /* Head */
+              memcpy(new_buf, out_buf, insert_at);
+
+              /* Inserted part */
+              memcpy(new_buf + insert_at, a_extras[use_extra].data, extra_len);
+
+            } else {
+
+              use_extra = UR(extras_cnt);
+              extra_len = extras[use_extra].len;
+
+              if (temp_len + extra_len >= MAX_FILE) break;
+
+              new_buf = ck_alloc_nozero(temp_len + extra_len);
+
+              /* Head */
+              memcpy(new_buf, out_buf, insert_at);
+
+              /* Inserted part */
+              memcpy(new_buf + insert_at, extras[use_extra].data, extra_len);
+
+            }
+
+            /* Tail */
+            memcpy(new_buf + insert_at + extra_len, out_buf + insert_at,
+                   temp_len - insert_at);
+
+            ck_free(out_buf);
+            out_buf   = new_buf;
+            temp_len += extra_len;
+
+            break;
+
+          }
+#else        
         /*@BBL @15_word 16_dword ,根据eff_map设置随即值，eff_map[i] = 1,设置随即值，eff_map[i] = 0
           给一个随机值，如果>25%,则设置随即值;   会产生浮点数例外*/
 
@@ -6642,6 +6737,7 @@ havoc_stage:
 
           }
           //END
+#endif
 
       }
 
@@ -8277,4 +8373,3 @@ stop_fuzzing:
 }
 
 #endif /* !AFL_LIB */
-
