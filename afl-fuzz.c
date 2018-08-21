@@ -27,7 +27,7 @@
 #define _FILE_OFFSET_BITS 64
 
 #define SELECT_INPUT      //@BBL 测试用例选择算法改进
-#define MUTATE_NUM        //@BBL 变异数量确定算法改进
+//#define MUTATE_NUM        //@BBL 变异数量确定算法改进
 //#define TARGET_MUTATE     //@BBL 针对性变异算法
 
 #include "config.h"
