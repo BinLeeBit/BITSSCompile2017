@@ -26,9 +26,8 @@
 #define _GNU_SOURCE
 #define _FILE_OFFSET_BITS 64
 
-#define SELECT_INPUT      //@BBL 测试用例选择算法改进
-//#define MUTATE_NUM        //@BBL 变异数量确定算法改进
-//#define TARGET_MUTATE     //@BBL 针对性变异算法
+//#define SELECT_INPUT      //@BBL 测试用例选择算法改进
+#define MUTATE_NUM        //@BBL 变异数量确定算法改进
 
 #include "config.h"
 #include "types.h"
@@ -237,7 +236,6 @@ struct queue_entry {
   u32 len;                            /* Input length                     */
   u32 eff_score;                      /* @BBL Score of effective bytes    */
 
-  u8  *eff_bits_table;                /*@BBL input队列的有效字节表           */
   u8  cal_failed,                     /* Calibration failed?              */
       trim_done,                      /* Trimmed?                         */
       was_fuzzed,                     /* Had any fuzzing done yet?        */
@@ -5046,7 +5044,7 @@ static u8 could_be_interest(u32 old_val, u32 new_val, u8 blen, u8 check_le) {
 static u8 fuzz_one(char** argv) {
 
   s32 len, fd, temp_len, i, j;
-  u8  *in_buf, *out_buf, *orig_in, *ex_tmp;// *eff_map = 0;
+  u8  *in_buf, *out_buf, *orig_in, *ex_tmp, *eff_map = 0;
   u64 havoc_queued,  orig_hit_cnt, new_hit_cnt;
   u32 splice_cycle = 0, perf_score = 100, orig_perf, prev_cksum, eff_cnt = 1;
 
@@ -5388,11 +5386,11 @@ static u8 fuzz_one(char** argv) {
   /* Initialize effector map for the next step (see comments below). Always
      flag first and last byte as doing something. */
   
-  queue_cur->eff_bits_table    = ck_alloc(EFF_ALEN(len));
-  queue_cur->eff_bits_table[0] = 1;
+  eff_map    = ck_alloc(EFF_ALEN(len));
+  eff_map[0] = 1;
 
   if (EFF_APOS(len - 1) != 0) {
-    queue_cur->eff_bits_table[EFF_APOS(len - 1)] = 1;
+    eff_map[EFF_APOS(len - 1)] = 1;
     eff_cnt++;
   }
   is_eff = 1;     //@BBL
@@ -5418,7 +5416,7 @@ static u8 fuzz_one(char** argv) {
        even when fully flipped - and we skip them during more expensive
        deterministic stages, such as arithmetics or known ints. */
 
-    if (!queue_cur->eff_bits_table[EFF_APOS(stage_cur)]) {
+    if (!eff_map[EFF_APOS(stage_cur)]) {
 
       u32 cksum;
 
@@ -5431,7 +5429,7 @@ static u8 fuzz_one(char** argv) {
         cksum = ~queue_cur->exec_cksum;
 
       if (cksum != queue_cur->exec_cksum) {
-        queue_cur->eff_bits_table[EFF_APOS(stage_cur)] = 1;
+        eff_map[EFF_APOS(stage_cur)] = 1;
         eff_cnt++;
       }
 
@@ -5466,7 +5464,7 @@ static u8 fuzz_one(char** argv) {
   if (eff_cnt != EFF_ALEN(len) &&
       eff_cnt * 100 / EFF_ALEN(len) > EFF_MAX_PERC) {
 
-    memset(queue_cur->eff_bits_table, 1, EFF_ALEN(len));
+    memset(eff_map, 1, EFF_ALEN(len));
 
     blocks_eff_select += EFF_ALEN(len);
 
@@ -5500,7 +5498,7 @@ static u8 fuzz_one(char** argv) {
 
     /* Let's consult the effector map... */
 
-    if (!queue_cur->eff_bits_table[EFF_APOS(i)] && !queue_cur->eff_bits_table[EFF_APOS(i + 1)]) {
+    if (!eff_map[EFF_APOS(i)] && !eff_map[EFF_APOS(i + 1)]) {
       stage_max--;
       continue;
     }
@@ -5536,8 +5534,8 @@ static u8 fuzz_one(char** argv) {
   for (i = 0; i < len - 3; i++) {
 
     /* Let's consult the effector map... */
-    if (!queue_cur->eff_bits_table[EFF_APOS(i)] && !queue_cur->eff_bits_table[EFF_APOS(i + 1)] &&
-        !queue_cur->eff_bits_table[EFF_APOS(i + 2)] && !queue_cur->eff_bits_table[EFF_APOS(i + 3)]) {
+    if (!eff_map[EFF_APOS(i)] && !eff_map[EFF_APOS(i + 1)] &&
+        !eff_map[EFF_APOS(i + 2)] && !eff_map[EFF_APOS(i + 3)]) {
       stage_max--;
       continue;
     }
@@ -5583,7 +5581,7 @@ skip_bitflip:
 
     /* Let's consult the effector map... */
 
-    if (!queue_cur->eff_bits_table[EFF_APOS(i)]) {
+    if (!eff_map[EFF_APOS(i)]) {
       stage_max -= 2 * ARITH_MAX;
       continue;
     }
@@ -5647,7 +5645,7 @@ skip_bitflip:
 
     /* Let's consult the effector map... */
 
-    if (!queue_cur->eff_bits_table[EFF_APOS(i)] && !queue_cur->eff_bits_table[EFF_APOS(i + 1)]) {
+    if (!eff_map[EFF_APOS(i)] && !eff_map[EFF_APOS(i + 1)]) {
       stage_max -= 4 * ARITH_MAX;
       continue;
     }
@@ -5741,8 +5739,8 @@ skip_bitflip:
 
     /* Let's consult the effector map... */
 
-    if (!queue_cur->eff_bits_table[EFF_APOS(i)] && !queue_cur->eff_bits_table[EFF_APOS(i + 1)] &&
-        !queue_cur->eff_bits_table[EFF_APOS(i + 2)] && !queue_cur->eff_bits_table[EFF_APOS(i + 3)]) {
+    if (!eff_map[EFF_APOS(i)] && !eff_map[EFF_APOS(i + 1)] &&
+        !eff_map[EFF_APOS(i + 2)] && !eff_map[EFF_APOS(i + 3)]) {
       stage_max -= 4 * ARITH_MAX;
       continue;
     }
@@ -5839,7 +5837,7 @@ skip_arith:
 
     /* Let's consult the effector map... */
 
-    if (!queue_cur->eff_bits_table[EFF_APOS(i)]) {
+    if (!eff_map[EFF_APOS(i)]) {
       stage_max -= sizeof(interesting_8);
       continue;
     }
@@ -5890,7 +5888,7 @@ skip_arith:
 
     /* Let's consult the effector map... */
 
-    if (!queue_cur->eff_bits_table[EFF_APOS(i)] && !queue_cur->eff_bits_table[EFF_APOS(i + 1)]) {
+    if (!eff_map[EFF_APOS(i)] && !eff_map[EFF_APOS(i + 1)]) {
       stage_max -= sizeof(interesting_16);
       continue;
     }
@@ -5958,8 +5956,8 @@ skip_arith:
 
     /* Let's consult the effector map... */
 
-    if (!queue_cur->eff_bits_table[EFF_APOS(i)] && !queue_cur->eff_bits_table[EFF_APOS(i + 1)] &&
-        !queue_cur->eff_bits_table[EFF_APOS(i + 2)] && !queue_cur->eff_bits_table[EFF_APOS(i + 3)]) {
+    if (!eff_map[EFF_APOS(i)] && !eff_map[EFF_APOS(i + 1)] &&
+        !eff_map[EFF_APOS(i + 2)] && !eff_map[EFF_APOS(i + 3)]) {
       stage_max -= sizeof(interesting_32) >> 1;
       continue;
     }
@@ -6050,7 +6048,7 @@ skip_interest:
       if ((extras_cnt > MAX_DET_EXTRAS && UR(extras_cnt) >= MAX_DET_EXTRAS) ||
           extras[j].len > len - i ||
           !memcmp(extras[j].data, out_buf + i, extras[j].len) ||
-          !memchr(queue_cur->eff_bits_table + EFF_APOS(i), 1, EFF_SPAN_ALEN(i, extras[j].len))) {
+          !memchr(eff_map + EFF_APOS(i), 1, EFF_SPAN_ALEN(i, extras[j].len))) {
 
         stage_max--;
         continue;
@@ -6150,7 +6148,7 @@ skip_user_extras:
 
       if (a_extras[j].len > len - i ||
           !memcmp(a_extras[j].data, out_buf + i, a_extras[j].len) ||
-          !memchr(queue_cur->eff_bits_table + EFF_APOS(i), 1, EFF_SPAN_ALEN(i, a_extras[j].len))) {
+          !memchr(eff_map + EFF_APOS(i), 1, EFF_SPAN_ALEN(i, a_extras[j].len))) {
 
         stage_max--;
         continue;
@@ -6234,12 +6232,7 @@ havoc_stage:
  
     for (i = 0; i < use_stacking; i++) {
 
-      //@BBL 15改成17
-      u32 rag = 15;
-#ifdef  TARGET_MUTATE
-      rag = 17;
-#endif
-      switch (UR(rag + ((extras_cnt + a_extras_cnt) ? 2 : 0))) {
+      switch (UR(15 + ((extras_cnt + a_extras_cnt) ? 2 : 0))) {
 
         case 0:
 
@@ -6410,19 +6403,9 @@ havoc_stage:
             /* Just set a random byte to a random value. Because,
               why not. We use XOR with 1-255 to eliminate the
               possibility of a no-op. */
-#ifndef TARGET_MUTATE
-            out_buf[UR(temp_len)] ^= 1 + UR(255);
-#else
-            /*@BBL @根据eff_map设置随即值，eff_map[i] = 1,设置随即值，eff_map[i] = 0
-                给一个随机值，如果>25%,则设置随即值;  此处产生段错误*/
-            u32 pos = UR(temp_len>len?len:temp_len);
-            
-            if((is_eff && queue_cur->eff_bits_table[EFF_APOS(pos)]) || UR(100) > HAVOC_RAND){
 
-              out_buf[pos] ^= 1 + UR(255);
-              
-            }
-#endif
+            out_buf[UR(temp_len)] ^= 1 + UR(255);
+
             break;
           }
 
@@ -6526,7 +6509,7 @@ havoc_stage:
             break;
 
           }
-#ifndef TARGET_MUTATE
+
         case 15: {
 
             /* Overwrite bytes with an extra. */
@@ -6615,129 +6598,6 @@ havoc_stage:
             break;
 
           }
-#else        
-        /*@BBL @15_word 16_dword ,根据eff_map设置随即值，eff_map[i] = 1,设置随即值，eff_map[i] = 0
-          给一个随机值，如果>25%,则设置随即值;   会产生浮点数例外*/
-
-        case 15: {
-
-            if(temp_len < 2) break;
-
-            u32 pos = UR((temp_len>len?len:temp_len) - 1);
-           
-            if((is_eff && queue_cur->eff_bits_table[EFF_APOS(pos)])|| UR(100) > HAVOC_RAND)
-              
-              *(u16*)(out_buf + pos) = 1 + UR(ARITH_MAX);
-            
-            break;
-          }
-
-        case 16: {
-
-            if(temp_len < 4) break;
-
-            u32 pos = UR((temp_len>len?len:temp_len) - 3);
-           
-            if((is_eff && queue_cur->eff_bits_table[EFF_APOS(pos)]) || UR(100) > HAVOC_RAND)
-              
-              *(u32*)(out_buf + pos) = 1 + UR(ARITH_MAX);
-            
-            break;
-          }
-
-        /* Values 17 and 18 can be selected only if there are any extras
-           present in the dictionaries. */
-
-        case 17: {
-
-            /* Overwrite bytes with an extra. */
-
-            if (!extras_cnt || (a_extras_cnt && UR(2))) {
-
-              /* No user-specified extras or odds in our favor. Let's use an
-                 auto-detected one. */
-
-              u32 use_extra = UR(a_extras_cnt);
-              u32 extra_len = a_extras[use_extra].len;
-              u32 insert_at;
-
-              if (extra_len > temp_len) break;
-
-              insert_at = UR(temp_len - extra_len + 1);
-              memcpy(out_buf + insert_at, a_extras[use_extra].data, extra_len);
-
-            } else {
-
-              /* No auto extras or odds in our favor. Use the dictionary. */
-
-              u32 use_extra = UR(extras_cnt);
-              u32 extra_len = extras[use_extra].len;
-              u32 insert_at;
-
-              if (extra_len > temp_len) break;
-
-              insert_at = UR(temp_len - extra_len + 1);
-              memcpy(out_buf + insert_at, extras[use_extra].data, extra_len);
-
-            }
-
-            break;
-
-          }
-
-        case 18: {
-
-            u32 use_extra, extra_len, insert_at = UR(temp_len + 1);
-            u8* new_buf;
-
-            /* Insert an extra. Do the same dice-rolling stuff as for the
-               previous case. */
-
-            if (!extras_cnt || (a_extras_cnt && UR(2))) {
-
-              use_extra = UR(a_extras_cnt);
-              extra_len = a_extras[use_extra].len;
-
-              if (temp_len + extra_len >= MAX_FILE) break;
-
-              new_buf = ck_alloc_nozero(temp_len + extra_len);
-
-              /* Head */
-              memcpy(new_buf, out_buf, insert_at);
-
-              /* Inserted part */
-              memcpy(new_buf + insert_at, a_extras[use_extra].data, extra_len);
-
-            } else {
-
-              use_extra = UR(extras_cnt);
-              extra_len = extras[use_extra].len;
-
-              if (temp_len + extra_len >= MAX_FILE) break;
-
-              new_buf = ck_alloc_nozero(temp_len + extra_len);
-
-              /* Head */
-              memcpy(new_buf, out_buf, insert_at);
-
-              /* Inserted part */
-              memcpy(new_buf + insert_at, extras[use_extra].data, extra_len);
-
-            }
-
-            /* Tail */
-            memcpy(new_buf + insert_at + extra_len, out_buf + insert_at,
-                   temp_len - insert_at);
-
-            ck_free(out_buf);
-            out_buf   = new_buf;
-            temp_len += extra_len;
-
-            break;
-
-          }
-          //END
-#endif
 
       }
 
